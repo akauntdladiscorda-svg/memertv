@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memer TV</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: rgba(255, 255, 255, 0.04);
+    --surface-strong: rgba(255, 255, 255, 0.07);
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.14);
+    --text: #f1f3f9;
+    --text-dim: #8a90a6;
+    --accent-1: #7c5cff;
+    --accent-2: #22d3ee;
+    --accent-3: #ff4d8d;
+  }
+
+  html, body { height: 100%; }
+
+  body {
+    background: var(--bg);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    min-height: 100vh;
+    position: relative;
+  }
+
+  /* Blob-градиенты на фоне */
+  .blobs {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    filter: blur(90px);
+    opacity: 0.5;
+  }
+
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    mix-blend-mode: screen;
+  }
+  .blob-1 {
+    width: 520px; height: 520px;
+    background: radial-gradient(circle, #7c5cff 0%, transparent 70%);
+    top: -120px; left: -100px;
+    animation: float1 18s ease-in-out infinite;
+  }
+  .blob-2 {
+    width: 460px; height: 460px;
+    background: radial-gradient(circle, #22d3ee 0%, transparent 70%);
+    bottom: -140px; right: -80px;
+    animation: float2 22s ease-in-out infinite;
+  }
+  .blob-3 {
+    width: 380px; height: 380px;
+    background: radial-gradient(circle, #ff4d8d 0%, transparent 70%);
+    top: 40%; left: 60%;
+    animation: float3 26s ease-in-out infinite;
+  }
+  @keyframes float1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%      { transform: translate(80px, 60px) scale(1.15); }
+  }
+  @keyframes float2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%      { transform: translate(-70px, -50px) scale(1.1); }
+  }
+  @keyframes float3 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50%      { transform: translate(-60px, 40px) scale(1.2); }
+  }
+
+  /* Сетка */
+  .grid-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+  }
+
+  /* Сцена */
+  .scene {
+    position: relative;
+    z-index: 2;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 100px 24px 40px;
+    gap: 24px;
+  }
+
+  /* Navbar */
+  .navbar {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 20px;
+    background: var(--surface);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  }
+  .navbar .logo-dot {
+    width: 22px; height: 22px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+    box-shadow: 0 0 16px rgba(124, 92, 255, 0.7);
+  }
+  .navbar .name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.5px;
+  }
+
+  /* Заголовок */
+  .hero-title { text-align: center; }
+  .hero-title h1 {
+    font-size: clamp(2rem, 6vw, 3.4rem);
+    font-weight: 800;
+    letter-spacing: -1.5px;
+    line-height: 1.05;
+    background: linear-gradient(135deg, #ffffff 0%, #b7b9d4 40%, #7c5cff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 10px;
+  }
+  .hero-title p {
+    color: var(--text-dim);
+    font-size: clamp(0.9rem, 2vw, 1.05rem);
+    max-width: 520px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+
+  /* ================== ТЕЛЕВИЗОР ================== */
+  .tv-stage {
+    position: relative;
+    width: 100%;
+    max-width: 1000px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Ореол свечения вокруг ТВ */
+  .tv-stage::before {
+    content: "";
+    position: absolute;
+    top: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 70%;
+    background: radial-gradient(ellipse at center,
+      rgba(124, 92, 255, 0.25) 0%,
+      rgba(34, 211, 238, 0.1) 40%,
+      transparent 70%);
+    filter: blur(60px);
+    z-index: 0;
+    animation: haloPulse 5s ease-in-out infinite;
+  }
+  @keyframes haloPulse {
+    0%, 100% { opacity: 0.7; }
+    50%      { opacity: 1; }
+  }
+
+  /* Корпус телевизора */
+  .tv-card {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    padding: 20px 20px 46px;
+    border-radius: 28px;
+    background: linear-gradient(160deg,
+      rgba(40, 42, 52, 0.75) 0%,
+      rgba(20, 22, 30, 0.85) 50%,
+      rgba(10, 12, 18, 0.95) 100%);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--border-strong);
+    box-shadow:
+      0 40px 80px -30px rgba(0, 0, 0, 0.95),
+      0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+      0 2px 0 rgba(255, 255, 255, 0.05) inset,
+      0 -10px 30px rgba(0, 0, 0, 0.7) inset,
+      0 0 60px rgba(124, 92, 255, 0.18);
+    transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .tv-card:hover {
+    transform: translateY(-4px);
+    box-shadow:
+      0 50px 90px -30px rgba(0, 0, 0, 0.95),
+      0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+      0 2px 0 rgba(255, 255, 255, 0.06) inset,
+      0 -10px 30px rgba(0, 0, 0, 0.7) inset,
+      0 0 90px rgba(124, 92, 255, 0.28);
+  }
+
+  /* Экран */
+  .tv-screen {
+    position: relative;
+    background: #000;
+    border-radius: 18px;
+    overflow: hidden;
+    aspect-ratio: 16 / 9;
+    width: 100%;
+    box-shadow:
+      0 0 0 2px #0a0b0e,
+      0 0 0 4px rgba(255, 255, 255, 0.04),
+      inset 0 0 80px rgba(0, 0, 0, 0.9),
+      0 0 40px rgba(124, 92, 255, 0.2);
+    isolation: isolate;
+  }
+  .tv-screen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    pointer-events: none;
+    background: linear-gradient(120deg,
+      rgba(255, 255, 255, 0.09) 0%,
+      transparent 25%,
+      transparent 75%,
+      rgba(255, 255, 255, 0.03) 100%);
+    mix-blend-mode: screen;
+  }
+
+  .scanlines {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0) 0px,
+      rgba(0, 0, 0, 0) 2px,
+      rgba(0, 0, 0, 0.14) 3px,
+      rgba(0, 0, 0, 0.14) 4px);
+    opacity: 0.5;
+    mix-blend-mode: multiply;
+  }
+
+  .scanbar {
+    position: absolute;
+    left: 0; right: 0;
+    height: 20%;
+    z-index: 5;
+    pointer-events: none;
+    background: linear-gradient(to bottom,
+      transparent 0%,
+      rgba(124, 200, 255, 0.07) 45%,
+      rgba(124, 200, 255, 0.13) 50%,
+      rgba(124, 200, 255, 0.07) 55%,
+      transparent 100%);
+    animation: scan 6s linear infinite;
+  }
+  @keyframes scan {
+    0%   { top: -25%; }
+    100% { top: 105%; }
+  }
+
+  .flicker {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+    background: rgba(255, 255, 255, 0.02);
+    animation: flick 3.5s steps(2) infinite;
+  }
+  @keyframes flick {
+    0%, 100% { opacity: 0.15; }
+    12%      { opacity: 0.4; }
+    24%      { opacity: 0.1; }
+    38%      { opacity: 0.32; }
+    55%      { opacity: 0.15; }
+    78%      { opacity: 0.28; }
+  }
+
+  .tv-screen iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+    background: #000;
+    z-index: 1;
+  }
+
+  /* --- Панель с кнопками под экраном --- */
+  .tv-panel {
+    position: absolute;
+    bottom: 12px;
+    left: 24px;
+    right: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 3;
+  }
+
+  .panel-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  /* Красный LED-индикатор (мигалка) */
+  .led-red {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ff2d55;
+    box-shadow:
+      0 0 8px #ff2d55,
+      0 0 16px rgba(255, 45, 85, 0.7),
+      0 0 24px rgba(255, 45, 85, 0.4);
+    animation: ledBlink 1.8s ease-in-out infinite;
+  }
+  @keyframes ledBlink {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.35; transform: scale(0.85); }
+  }
+
+  /* Зелёный LED (питание) */
+  .led-green {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #00ff9d;
+    box-shadow: 0 0 8px #00ff9d, 0 0 14px rgba(0, 255, 157, 0.5);
+    animation: ledPulse 3s ease-in-out infinite;
+  }
+  @keyframes ledPulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.5; }
+  }
+
+  .panel-label {
+    font-size: 0.6rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #6a7080;
+    font-weight: 700;
+    margin-left: 4px;
+  }
+
+  /* Правые кнопки-точки */
+  .panel-right {
+    display: flex;
+    gap: 8px;
+  }
+  .panel-right span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #2a2e38;
+    box-shadow:
+      inset 0 1px 2px rgba(0, 0, 0, 0.8),
+      0 0 0 1px rgba(255, 255, 255, 0.03);
+  }
+  .panel-right span:nth-child(2) {
+    background: #343a48;
+  }
+  .panel-right span:nth-child(3) {
+    background: #3d4454;
+  }
+
+  /* Кнопки на корпусе справа — маленькие полоски */
+  .tv-buttons {
+    position: absolute;
+    right: 22px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 3;
+  }
+  .tv-buttons i {
+    display: block;
+    width: 14px;
+    height: 3px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, #2c313c, #181b22);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 1px 1px rgba(0, 0, 0, 0.6);
+  }
+
+  /* --- СТОЛ --- */
+  .table {
+    position: relative;
+    z-index: 1;
+    width: 118%;
+    max-width: 1200px;
+    height: 90px;
+    margin-top: -14px;
+    border-radius: 12px 12px 0 0;
+    background: linear-gradient(180deg,
+      rgba(40, 44, 58, 0.9) 0%,
+      rgba(18, 20, 28, 0.95) 40%,
+      rgba(8, 9, 14, 1) 100%);
+    box-shadow:
+      0 -2px 0 rgba(255, 255, 255, 0.06) inset,
+      0 20px 50px rgba(0, 0, 0, 0.8),
+      0 -20px 40px -10px rgba(124, 92, 255, 0.12);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  /* Блик на столе от телевизора */
+  .table::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 100%;
+    background: radial-gradient(ellipse at top center,
+      rgba(124, 92, 255, 0.18) 0%,
+      transparent 70%);
+    pointer-events: none;
+  }
+
+  /* --- ПУЛЬТ на столе --- */
+  .remote {
+    position: absolute;
+    bottom: 12px;
+    right: 22%;
+    width: 44px;
+    height: 118px;
+    border-radius: 10px;
+    background: linear-gradient(160deg, #23262f 0%, #12141a 100%);
+    box-shadow:
+      0 20px 30px rgba(0, 0, 0, 0.8),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.8),
+      0 0 0 1px rgba(255, 255, 255, 0.04);
+    z-index: 3;
+    padding: 8px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+
+  /* Красная кнопка питания сверху пульта */
+  .remote .power {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ff2d55;
+    box-shadow: 0 0 6px #ff2d55, 0 0 12px rgba(255, 45, 85, 0.6);
+    margin-bottom: 2px;
+  }
+
+  /* Ряд мелких кнопок */
+  .remote .row {
+    display: flex;
+    gap: 4px;
+  }
+  .remote .row i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #2a2e38;
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.8), 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
+  /* Круглая навигация (D-pad) */
+  .remote .dpad {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #2e3340, #14161c);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      inset 0 -2px 3px rgba(0, 0, 0, 0.9),
+      0 2px 4px rgba(0, 0, 0, 0.6);
+    display: grid;
+    place-items: center;
+    margin: 3px 0;
+  }
+  .remote .dpad::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #0a0b0e;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 1);
+  }
+
+  /* Полоски-кнопки снизу */
+  .remote .bar {
+    width: 20px;
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, #2e3340, #181b22);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 1px 1px rgba(0, 0, 0, 0.6);
+  }
+  .remote .bar.short { width: 14px; }
+
+  /* Блик-подсветка на пульте */
+  .remote::after {
+    content: "";
+    position: absolute;
+    top: 4px;
+    left: 6px;
+    width: 6px;
+    height: 60%;
+    border-radius: 6px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent);
+    pointer-events: none;
+  }
+
+  /* --- Адаптив --- */
+  @media (max-width: 640px) {
+    .navbar { padding: 8px 14px; gap: 10px; }
+    .navbar .name { font-size: 0.85rem; }
+    .tv-card { padding: 14px 14px 40px; border-radius: 22px; }
+    .tv-screen { border-radius: 14px; }
+    .scene { padding: 90px 16px 30px; gap: 20px; }
+    .tv-panel { bottom: 8px; left: 16px; right: 16px; }
+    .panel-label { display: none; }
+    .tv-buttons { display: none; }
+
+    .table { height: 70px; }
+    .remote {
+      width: 36px;
+      height: 96px;
+      right: 12%;
+    }
+  }
+</style>
+</head>
+<body>
+
+  <div class="blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+  <div class="grid-overlay"></div>
+
+  <nav class="navbar">
+    <div class="logo-dot"></div>
+    <span class="name">Memer TV</span>
+  </nav>
+
+  <main class="scene">
+
+    <header class="hero-title">
+      <h1>Memer TV</h1>
+      <p></p>
+    </header>
+
+    <!-- Телевизор + стол -->
+    <div class="tv-stage">
+
+      <!-- Корпус телевизора -->
+      <div class="tv-card">
+
+        <!-- Экран -->
+        <div class="tv-screen">
+          <!-- ▼▼▼ ВСТАВЬ СВОЙ IFRAME ЗДЕСЬ ▼▼▼ -->
+          <iframe width="720" height="405" src="https://rutube.ru/play/embed/a7a7ee9bf00c59354467d95c1eabeb8e/" style="border: none;" allow="clipboard-write; autoplay" allowFullScreen></iframe>
+            src="about:blank"
+            title="Memer TV screen"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen
+            loading="lazy"
+          ></iframe>
+
+          <div class="scanlines"></div>
+          <div class="scanbar"></div>
+          <div class="flicker"></div>
+        </div>
+
+        <!-- Кнопки на правой боковине корпуса -->
+        <div class="tv-buttons">
+          <i></i><i></i><i></i><i></i>
+        </div>
+
+        <!-- Панель управления снизу корпуса -->
+        <div class="tv-panel">
+          <div class="panel-left">
+            <div class="led-red"></div>
+            <div class="led-green"></div>
+            <span class="panel-label">on air</span>
+          </div>
+          <div class="panel-right">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Стол с пультом -->
+      <div class="table">
+        <!-- Пульт -->
+        <div class="remote" title="Пульт Memer TV">
+          <div class="power"></div>
+          <div class="row"><i></i><i></i><i></i></div>
+          <div class="row"><i></i><i></i><i></i></div>
+          <div class="dpad"></div>
+          <div class="row"><i></i><i></i></div>
+          <div class="bar"></div>
+          <div class="bar short"></div>
+          <div class="bar"></div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+</body>
+</html>
